@@ -41,6 +41,7 @@ export default function AddCdPage() {
             name="artist"
             type="text"
             required
+            autoFocus
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
             placeholder="e.g. Radiohead"
