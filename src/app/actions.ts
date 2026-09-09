@@ -21,13 +21,14 @@ export async function addCd(
     return { error: "Please enter both a band/artist and an album title." };
   }
 
-  let metadata;
+  // Best-effort metadata lookup: if MusicBrainz is unreachable or rate-limited
+  // (shared IPs on Vercel can trip its ~1req/sec limit), still save the CD
+  // with what the user typed rather than losing their input.
+  let metadata = null;
   try {
     metadata = await fetchAlbumMetadata(artist, title);
-  } catch {
-    return {
-      error: "Couldn't reach MusicBrainz to fetch metadata. Please try again.",
-    };
+  } catch (err) {
+    console.error("MusicBrainz metadata lookup failed:", err);
   }
 
   const db = await getDb();

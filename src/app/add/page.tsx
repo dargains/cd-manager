@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { addCd, type AddCdState } from "../actions";
@@ -9,6 +9,12 @@ const initialState: AddCdState = {};
 
 export default function AddCdPage() {
   const [state, formAction] = useActionState(addCd, initialState);
+  // Controlled inputs: React resets uncontrolled fields after any form
+  // action that resolves without navigating away (e.g. a validation error),
+  // which would otherwise wipe what was typed. Keeping the value in state
+  // here means it survives that reset.
+  const [artist, setArtist] = useState("");
+  const [title, setTitle] = useState("");
 
   return (
     <main className="flex-1 max-w-lg w-full mx-auto px-6 py-10">
@@ -35,6 +41,8 @@ export default function AddCdPage() {
             name="artist"
             type="text"
             required
+            value={artist}
+            onChange={(e) => setArtist(e.target.value)}
             placeholder="e.g. Radiohead"
             className="rounded-md border border-black/15 dark:border-white/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground"
           />
@@ -49,6 +57,8 @@ export default function AddCdPage() {
             name="title"
             type="text"
             required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. OK Computer"
             className="rounded-md border border-black/15 dark:border-white/20 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground"
           />

@@ -27,14 +27,30 @@ export interface AlbumMetadata {
   musicbrainzId: string | null;
 }
 
+// MusicBrainz enforces a ~1 req/sec rate limit per source IP. On Vercel,
+// serverless functions share IP ranges with countless other deployments
+// also calling MusicBrainz, so a 503 here doesn't mean *we* went over the
+// limit — it can happen even on a single, first-ever request. Retry once
+// after a short backoff (honoring Retry-After when present) before giving up.
 async function mbFetch(path: string): Promise<Response> {
-  const res = await fetch(`https://musicbrainz.org/ws/2/${path}`, {
-    headers: {
-      "User-Agent": USER_AGENT,
-      Accept: "application/json",
-    },
-  });
-  return res;
+  const url = `https://musicbrainz.org/ws/2/${path}`;
+  const headers = {
+    "User-Agent": USER_AGENT,
+    Accept: "application/json",
+  };
+
+  const res = await fetch(url, { headers });
+  if (res.status !== 503) {
+    return res;
+  }
+
+  const retryAfterSeconds = parseInt(res.headers.get("retry-after") || "", 10);
+  const delayMs = Number.isFinite(retryAfterSeconds)
+    ? Math.min(retryAfterSeconds * 1000, 3000)
+    : 1000;
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+  return fetch(url, { headers });
 }
 
 /**
@@ -46,7 +62,10 @@ export async function fetchAlbumMetadata(
   artist: string,
   title: string
 ): Promise<AlbumMetadata | null> {
-  const query = `artist:"${artist}" AND release:"${title}"`;
+  // Escape Lucene special characters so titles/artists containing quotes
+  // (e.g. `"Weird Al"`) don't break the query syntax.
+  const escape = (s: string) => s.replace(/["\\]/g, "\\$&");
+  const query = `artist:"${escape(artist)}" AND release:"${escape(title)}"`;
   const res = await mbFetch(
     `release/?query=${encodeURIComponent(query)}&fmt=json&limit=5`
   );
