@@ -13,8 +13,9 @@ Next.js (App Router) + TypeScript + Tailwind, MongoDB for storage, deployed on V
 
 ## Local development
 
-1. Copy `.env.example` to `.env.local` and fill in `MONGODB_URI` with a connection
-   string (e.g. from a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster).
+1. Copy `.env.example` to `.env.local` and fill in `STORAGE_MONGODB_URI` with a
+   connection string (e.g. from a free [MongoDB Atlas](https://www.mongodb.com/atlas)
+   cluster, or by pulling `vercel env pull` if you set it up via the Vercel integration).
 2. Install dependencies and run the dev server:
 
    ```bash
@@ -27,6 +28,7 @@ Next.js (App Router) + TypeScript + Tailwind, MongoDB for storage, deployed on V
 ## Deploying to Vercel
 
 1. Push this repo to GitHub and import it into [Vercel](https://vercel.com/new).
-2. In the Vercel project settings, add an environment variable `MONGODB_URI`
-   (and optionally `MONGODB_DB`, `MUSICBRAINZ_CONTACT`) with your MongoDB connection string.
+2. Add the MongoDB Atlas integration (or set `STORAGE_MONGODB_URI` manually in the
+   Vercel project settings) with your MongoDB connection string. Optionally also set
+   `MONGODB_DB` and `MUSICBRAINZ_CONTACT`.
 3. Deploy. No other configuration is needed.

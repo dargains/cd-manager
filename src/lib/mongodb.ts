@@ -5,9 +5,9 @@ declare global {
 }
 
 function createClientPromise(): Promise<MongoClient> {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.STORAGE_MONGODB_URI;
   if (!uri) {
-    throw new Error("Missing MONGODB_URI environment variable");
+    throw new Error("Missing STORAGE_MONGODB_URI environment variable");
   }
 
   if (process.env.NODE_ENV === "development") {
