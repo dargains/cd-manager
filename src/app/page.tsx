@@ -67,43 +67,45 @@ export default async function Home() {
 function CdCard({ cd }: { cd: Cd }) {
   return (
     <div className="group relative flex flex-col gap-2">
-      <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative">
-        {cd.coverArtUrl ? (
-          <Image
-            src={cd.coverArtUrl}
-            alt={`${cd.title} cover art`}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-            className="object-cover"
-            unoptimized
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl">
-            💿
-          </div>
-        )}
-        <form
-          action={deleteCd.bind(null, cd._id)}
-          className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+      <Link href={`/cd/${cd._id}`} className="contents">
+        <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative">
+          {cd.coverArtUrl ? (
+            <Image
+              src={cd.coverArtUrl}
+              alt={`${cd.title} cover art`}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+              className="object-cover"
+              unoptimized
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl">
+              💿
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="font-medium text-sm leading-tight truncate">
+            {cd.title}
+          </p>
+          <p className="text-sm text-black/60 dark:text-white/60 truncate">
+            {cd.artist}
+            {cd.year ? ` · ${cd.year}` : ""}
+          </p>
+        </div>
+      </Link>
+      <form
+        action={deleteCd.bind(null, cd._id)}
+        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <button
+          type="submit"
+          title="Remove from collection"
+          className="rounded-full bg-black/60 text-white w-7 h-7 flex items-center justify-center text-sm hover:bg-black/80"
         >
-          <button
-            type="submit"
-            title="Remove from collection"
-            className="rounded-full bg-black/60 text-white w-7 h-7 flex items-center justify-center text-sm hover:bg-black/80"
-          >
-            ×
-          </button>
-        </form>
-      </div>
-      <div>
-        <p className="font-medium text-sm leading-tight truncate">
-          {cd.title}
-        </p>
-        <p className="text-sm text-black/60 dark:text-white/60 truncate">
-          {cd.artist}
-          {cd.year ? ` · ${cd.year}` : ""}
-        </p>
-      </div>
+          ×
+        </button>
+      </form>
     </div>
   );
 }

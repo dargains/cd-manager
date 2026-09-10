@@ -94,3 +94,51 @@ export async function fetchAlbumMetadata(
       : null,
   };
 }
+
+interface MusicBrainzTrack {
+  position: number;
+  title: string;
+  length?: number | null;
+}
+
+interface MusicBrainzMedium {
+  format?: string;
+  tracks?: MusicBrainzTrack[];
+}
+
+interface MusicBrainzReleaseDetail {
+  media?: MusicBrainzMedium[];
+}
+
+export interface Track {
+  position: number;
+  title: string;
+  lengthMs: number | null;
+}
+
+/**
+ * Fetches the track listing for a release. Returns null if the release
+ * can't be found or has no track data.
+ */
+export async function fetchTracklist(
+  releaseMbid: string
+): Promise<Track[] | null> {
+  const res = await mbFetch(`release/${releaseMbid}?inc=recordings&fmt=json`);
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data: MusicBrainzReleaseDetail = await res.json();
+  const tracks = data.media?.flatMap((medium) => medium.tracks ?? []) ?? [];
+
+  if (tracks.length === 0) {
+    return null;
+  }
+
+  return tracks.map((t) => ({
+    position: t.position,
+    title: t.title,
+    lengthMs: t.length ?? null,
+  }));
+}
