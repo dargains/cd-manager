@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ViewTransition } from "react";
+import { Suspense, ViewTransition } from "react";
 import { getDb } from "@/lib/mongodb";
 import { fetchTracklist, type Track } from "@/lib/musicbrainz";
 import type { Cd } from "@/lib/types";
@@ -69,6 +69,59 @@ async function getRelatedCds(cd: Cd): Promise<Cd[]> {
   }));
 }
 
+async function TrackListing({ musicbrainzId }: { musicbrainzId: string | null }) {
+  let tracks: Track[] | null = null;
+  if (musicbrainzId) {
+    try {
+      tracks = await fetchTracklist(musicbrainzId);
+    } catch {
+      tracks = null;
+    }
+  }
+
+  if (!tracks) {
+    return (
+      <p className="text-sm text-black/50 dark:text-white/50">
+        No track listing available for this release.
+      </p>
+    );
+  }
+
+  return (
+    <ol className="flex flex-col divide-y divide-black/10 dark:divide-white/10">
+      {tracks.map((track) => (
+        <li
+          key={track.position}
+          className="flex items-center gap-3 py-2 text-sm hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors rounded-md px-2 -mx-2"
+        >
+          <span className="text-black/40 dark:text-white/40 w-5 text-right shrink-0">
+            {track.position}
+          </span>
+          <span className="flex-1 truncate">{track.title}</span>
+          {track.lengthMs !== null && (
+            <span className="text-black/50 dark:text-white/50 shrink-0">
+              {formatDuration(track.lengthMs)}
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function TrackListingSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-5 w-full rounded bg-black/10 dark:bg-white/10 animate-pulse"
+        />
+      ))}
+    </div>
+  );
+}
+
 export default async function CdDetailPage(
   props: PageProps<"/cd/[id]">
 ) {
@@ -77,15 +130,6 @@ export default async function CdDetailPage(
 
   if (!cd) {
     notFound();
-  }
-
-  let tracks: Track[] | null = null;
-  if (cd.musicbrainzId) {
-    try {
-      tracks = await fetchTracklist(cd.musicbrainzId);
-    } catch {
-      tracks = null;
-    }
   }
 
   const relatedCds = await getRelatedCds(cd);
@@ -166,30 +210,9 @@ export default async function CdDetailPage(
         <h2 className="text-sm font-medium text-black/60 dark:text-white/60 mb-3">
           Track listing
         </h2>
-        {tracks ? (
-          <ol className="flex flex-col divide-y divide-black/10 dark:divide-white/10">
-            {tracks.map((track) => (
-              <li
-                key={track.position}
-                className="flex items-center gap-3 py-2 text-sm hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors rounded-md px-2 -mx-2"
-              >
-                <span className="text-black/40 dark:text-white/40 w-5 text-right shrink-0">
-                  {track.position}
-                </span>
-                <span className="flex-1 truncate">{track.title}</span>
-                {track.lengthMs !== null && (
-                  <span className="text-black/50 dark:text-white/50 shrink-0">
-                    {formatDuration(track.lengthMs)}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-sm text-black/50 dark:text-white/50">
-            No track listing available for this release.
-          </p>
-        )}
+        <Suspense fallback={<TrackListingSkeleton />}>
+          <TrackListing musicbrainzId={cd.musicbrainzId} />
+        </Suspense>
       </div>
 
       {relatedCds.length > 0 && (
