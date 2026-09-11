@@ -24,3 +24,54 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Entrance animation for grid cards, tags, and list rows. Applied via the
+   `.animate-in` class with an inline `--delay` custom property for stagger. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Soften the native View Transition morph (cover art between the grid and
+   detail page) with a brief blur mid-flight, per Next's view-transitions
+   guide. `share="morph"` on the <ViewTransition> assigns this class. */
+::view-transition-group(.morph) {
+  animation-duration: 420ms;
+}
+::view-transition-image-pair(.morph) {
+  animation-name: cover-blur;
+}
+@keyframes cover-blur {
+  30% {
+    filter: blur(4px);
+  }
+}
+
+/* Keep the page interactive while a view transition overlay is animating. */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

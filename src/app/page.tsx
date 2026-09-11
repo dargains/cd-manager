@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { getDb } from "@/lib/mongodb";
 import type { Cd } from "@/lib/types";
 import { deleteCd } from "./actions";
@@ -41,14 +42,14 @@ export default async function Home() {
         </div>
         <Link
           href="/add"
-          className="rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+          className="rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 hover:scale-105 active:scale-95 transition-all"
         >
           + Add CD
         </Link>
       </div>
 
       {cds.length === 0 ? (
-        <div className="text-center py-24 text-black/50 dark:text-white/50">
+        <div className="text-center py-24 text-black/50 dark:text-white/50 animate-in">
           <p>No CDs yet.</p>
           <Link href="/add" className="underline underline-offset-4">
             Add your first one
@@ -56,8 +57,8 @@ export default async function Home() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {cds.map((cd) => (
-            <CdCard key={cd._id} cd={cd} />
+          {cds.map((cd, index) => (
+            <CdCard key={cd._id} cd={cd} index={index} />
           ))}
         </div>
       )}
@@ -65,22 +66,27 @@ export default async function Home() {
   );
 }
 
-function CdCard({ cd }: { cd: Cd }) {
+function CdCard({ cd, index }: { cd: Cd; index: number }) {
   return (
-    <div className="group relative flex flex-col gap-2">
+    <div
+      className="group relative flex flex-col gap-2 animate-in"
+      style={{ "--delay": `${Math.min(index * 30, 300)}ms` } as React.CSSProperties}
+    >
       <Link href={`/cd/${cd._id}`} className="contents">
-        <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative">
+        <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative transition-shadow duration-300 group-hover:shadow-lg">
           {cd.coverArtUrl ? (
-            <Image
-              src={cd.coverArtUrl}
-              alt={`${cd.title} cover art`}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-              className="object-cover"
-              unoptimized
-            />
+            <ViewTransition name={`cover-${cd._id}`} share="morph" default="none">
+              <Image
+                src={cd.coverArtUrl}
+                alt={`${cd.title} cover art`}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                unoptimized
+              />
+            </ViewTransition>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl">
+            <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl transition-transform duration-300 group-hover:scale-105">
               💿
             </div>
           )}
@@ -102,7 +108,7 @@ function CdCard({ cd }: { cd: Cd }) {
         <button
           type="submit"
           title="Remove from collection"
-          className="rounded-full bg-black/60 text-white w-7 h-7 flex items-center justify-center text-sm hover:bg-black/80"
+          className="rounded-full bg-black/60 text-white w-7 h-7 flex items-center justify-center text-sm hover:bg-black/80 hover:scale-110 active:scale-90 transition-transform"
         >
           ×
         </button>

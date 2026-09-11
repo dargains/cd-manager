@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ViewTransition } from "react";
 import { getDb } from "@/lib/mongodb";
 import { fetchTracklist, type Track } from "@/lib/musicbrainz";
 import type { Cd } from "@/lib/types";
@@ -93,7 +94,7 @@ export default async function CdDetailPage(
     <main className="flex-1 max-w-3xl w-full mx-auto px-6 py-10">
       <Link
         href="/"
-        className="text-sm text-black/60 dark:text-white/60 hover:underline underline-offset-4"
+        className="text-sm text-black/60 dark:text-white/60 hover:underline hover:text-foreground underline-offset-4 transition-colors"
       >
         ← Back to collection
       </Link>
@@ -102,14 +103,20 @@ export default async function CdDetailPage(
         <div className="w-full sm:w-56 shrink-0">
           <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative">
             {cd.coverArtUrl ? (
-              <Image
-                src={cd.coverArtUrl}
-                alt={`${cd.title} cover art`}
-                fill
-                sizes="(max-width: 640px) 100vw, 224px"
-                className="object-cover"
-                unoptimized
-              />
+              <ViewTransition
+                name={`cover-${cd._id}`}
+                share="morph"
+                default="none"
+              >
+                <Image
+                  src={cd.coverArtUrl}
+                  alt={`${cd.title} cover art`}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 224px"
+                  className="object-cover"
+                  unoptimized
+                />
+              </ViewTransition>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-6xl">
                 💿
@@ -118,7 +125,10 @@ export default async function CdDetailPage(
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 pt-1">
+        <div
+          className="flex flex-col gap-1 pt-1 animate-in"
+          style={{ "--delay": "80ms" } as React.CSSProperties}
+        >
           <h1 className="text-2xl font-semibold leading-tight">{cd.title}</h1>
           <p className="text-lg text-black/70 dark:text-white/70">
             {cd.artist}
@@ -135,10 +145,11 @@ export default async function CdDetailPage(
           </p>
           {cd.genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {cd.genres.map((genre) => (
+              {cd.genres.map((genre, i) => (
                 <span
                   key={genre}
-                  className="rounded-full bg-black/5 dark:bg-white/10 px-2.5 py-1 text-xs text-black/70 dark:text-white/70 capitalize"
+                  className="rounded-full bg-black/5 dark:bg-white/10 px-2.5 py-1 text-xs text-black/70 dark:text-white/70 capitalize animate-in hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                  style={{ "--delay": `${140 + i * 40}ms` } as React.CSSProperties}
                 >
                   {genre}
                 </span>
@@ -148,7 +159,10 @@ export default async function CdDetailPage(
         </div>
       </div>
 
-      <div className="mt-10">
+      <div
+        className="mt-10 animate-in"
+        style={{ "--delay": "160ms" } as React.CSSProperties}
+      >
         <h2 className="text-sm font-medium text-black/60 dark:text-white/60 mb-3">
           Track listing
         </h2>
@@ -157,7 +171,7 @@ export default async function CdDetailPage(
             {tracks.map((track) => (
               <li
                 key={track.position}
-                className="flex items-center gap-3 py-2 text-sm"
+                className="flex items-center gap-3 py-2 text-sm hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors rounded-md px-2 -mx-2"
               >
                 <span className="text-black/40 dark:text-white/40 w-5 text-right shrink-0">
                   {track.position}
@@ -179,29 +193,39 @@ export default async function CdDetailPage(
       </div>
 
       {relatedCds.length > 0 && (
-        <div className="mt-10">
+        <div
+          className="mt-10 animate-in"
+          style={{ "--delay": "220ms" } as React.CSSProperties}
+        >
           <h2 className="text-sm font-medium text-black/60 dark:text-white/60 mb-3">
             Related albums
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {relatedCds.map((related) => (
+            {relatedCds.map((related, i) => (
               <Link
                 key={related._id}
                 href={`/cd/${related._id}`}
-                className="flex flex-col gap-2"
+                className="group flex flex-col gap-2 animate-in"
+                style={{ "--delay": `${260 + i * 30}ms` } as React.CSSProperties}
               >
-                <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative">
+                <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative transition-shadow duration-300 group-hover:shadow-lg">
                   {related.coverArtUrl ? (
-                    <Image
-                      src={related.coverArtUrl}
-                      alt={`${related.title} cover art`}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-                      className="object-cover"
-                      unoptimized
-                    />
+                    <ViewTransition
+                      name={`cover-${related._id}`}
+                      share="morph"
+                      default="none"
+                    >
+                      <Image
+                        src={related.coverArtUrl}
+                        alt={`${related.title} cover art`}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
+                      />
+                    </ViewTransition>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl">
+                    <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl transition-transform duration-300 group-hover:scale-105">
                       💿
                     </div>
                   )}
