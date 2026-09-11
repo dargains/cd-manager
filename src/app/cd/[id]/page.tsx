@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, ViewTransition } from "react";
-import { getDb } from "@/lib/mongodb";
+import { CASE_INSENSITIVE_COLLATION, getDb } from "@/lib/mongodb";
 import { fetchTracklist, type Track } from "@/lib/musicbrainz";
 import type { Cd } from "@/lib/types";
 
@@ -52,6 +52,7 @@ async function getRelatedCds(cd: Cd): Promise<Cd[]> {
       _id: { $ne: new ObjectId(cd._id) },
       genres: { $in: cd.genres },
     })
+    .collation(CASE_INSENSITIVE_COLLATION)
     .sort({ artist: 1, title: 1 })
     .limit(8)
     .toArray();

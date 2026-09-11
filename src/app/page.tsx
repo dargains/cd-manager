@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ViewTransition } from "react";
-import { getDb } from "@/lib/mongodb";
+import { CASE_INSENSITIVE_COLLATION, getDb } from "@/lib/mongodb";
 import type { Cd } from "@/lib/types";
 import { deleteCd } from "./actions";
 
@@ -12,6 +12,7 @@ async function getCds(): Promise<Cd[]> {
   const docs = await db
     .collection("cds")
     .find({})
+    .collation(CASE_INSENSITIVE_COLLATION)
     .sort({ artist: 1, title: 1 })
     .toArray();
 

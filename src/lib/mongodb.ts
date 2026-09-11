@@ -30,3 +30,9 @@ export async function getDb() {
   const client = await clientPromise;
   return client.db(process.env.MONGODB_DB || "cd_manager");
 }
+
+// MongoDB's default string comparison is byte-wise, so every capitalized
+// name sorts before any lowercase one (e.g. "alt-J" would land after "Z").
+// Use this collation on .sort() calls over artist/title for a normal
+// case-insensitive alphabetical order instead.
+export const CASE_INSENSITIVE_COLLATION = { locale: "en", strength: 2 } as const;
