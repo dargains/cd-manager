@@ -6,5 +6,6 @@ export interface Cd {
   trackCount: number | null;
   coverArtUrl: string | null;
   musicbrainzId: string | null;
+  genres: string[];
   createdAt: string;
 }

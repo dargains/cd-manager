@@ -39,6 +39,7 @@ export async function addCd(
     trackCount: metadata?.trackCount ?? null,
     coverArtUrl: metadata?.coverArtUrl ?? null,
     musicbrainzId: metadata?.musicbrainzId ?? null,
+    genres: metadata?.genres ?? [],
     createdAt: new Date(),
   });
 

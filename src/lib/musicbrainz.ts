@@ -25,6 +25,7 @@ export interface AlbumMetadata {
   trackCount: number | null;
   coverArtUrl: string | null;
   musicbrainzId: string | null;
+  genres: string[];
 }
 
 // MusicBrainz enforces a ~1 req/sec rate limit per source IP. On Vercel,
@@ -83,6 +84,10 @@ export async function fetchAlbumMetadata(
 
   const releaseGroupId = best["release-group"]?.id ?? null;
 
+  // Genres are supplementary — if this lookup fails or is empty, we still
+  // want to save the rest of the metadata, so this never throws.
+  const genres = releaseGroupId ? await fetchGenres(releaseGroupId) : [];
+
   return {
     artist: best["artist-credit"]?.[0]?.name ?? artist,
     title: best.title,
@@ -92,7 +97,38 @@ export async function fetchAlbumMetadata(
     coverArtUrl: releaseGroupId
       ? `https://coverartarchive.org/release-group/${releaseGroupId}/front-250`
       : null,
+    genres,
   };
+}
+
+interface MusicBrainzGenre {
+  name: string;
+  count: number;
+}
+
+interface MusicBrainzReleaseGroupDetail {
+  genres?: MusicBrainzGenre[];
+}
+
+/**
+ * Fetches the top user-voted genre tags for a release group. Best-effort:
+ * returns an empty array rather than throwing if the lookup fails.
+ */
+async function fetchGenres(releaseGroupId: string): Promise<string[]> {
+  try {
+    const res = await mbFetch(`release-group/${releaseGroupId}?inc=genres&fmt=json`);
+    if (!res.ok) {
+      return [];
+    }
+
+    const data: MusicBrainzReleaseGroupDetail = await res.json();
+    return (data.genres ?? [])
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((g) => g.name);
+  } catch {
+    return [];
+  }
 }
 
 interface MusicBrainzTrack {

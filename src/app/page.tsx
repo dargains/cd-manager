@@ -22,6 +22,7 @@ async function getCds(): Promise<Cd[]> {
     trackCount: doc.trackCount ?? null,
     coverArtUrl: doc.coverArtUrl ?? null,
     musicbrainzId: doc.musicbrainzId ?? null,
+    genres: doc.genres ?? [],
     createdAt: doc.createdAt?.toISOString?.() ?? "",
   }));
 }

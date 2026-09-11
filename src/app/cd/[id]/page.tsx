@@ -36,8 +36,36 @@ async function getCd(id: string): Promise<Cd | null> {
     trackCount: doc.trackCount ?? null,
     coverArtUrl: doc.coverArtUrl ?? null,
     musicbrainzId: doc.musicbrainzId ?? null,
+    genres: doc.genres ?? [],
     createdAt: doc.createdAt?.toISOString?.() ?? "",
   };
+}
+
+async function getRelatedCds(cd: Cd): Promise<Cd[]> {
+  if (cd.genres.length === 0) return [];
+
+  const db = await getDb();
+  const docs = await db
+    .collection("cds")
+    .find({
+      _id: { $ne: new ObjectId(cd._id) },
+      genres: { $in: cd.genres },
+    })
+    .sort({ artist: 1, title: 1 })
+    .limit(8)
+    .toArray();
+
+  return docs.map((doc) => ({
+    _id: doc._id.toString(),
+    artist: doc.artist,
+    title: doc.title,
+    year: doc.year ?? null,
+    trackCount: doc.trackCount ?? null,
+    coverArtUrl: doc.coverArtUrl ?? null,
+    musicbrainzId: doc.musicbrainzId ?? null,
+    genres: doc.genres ?? [],
+    createdAt: doc.createdAt?.toISOString?.() ?? "",
+  }));
 }
 
 export default async function CdDetailPage(
@@ -58,6 +86,8 @@ export default async function CdDetailPage(
       tracks = null;
     }
   }
+
+  const relatedCds = await getRelatedCds(cd);
 
   return (
     <main className="flex-1 max-w-3xl w-full mx-auto px-6 py-10">
@@ -103,6 +133,18 @@ export default async function CdDetailPage(
               .filter(Boolean)
               .join(" · ")}
           </p>
+          {cd.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {cd.genres.map((genre) => (
+                <span
+                  key={genre}
+                  className="rounded-full bg-black/5 dark:bg-white/10 px-2.5 py-1 text-xs text-black/70 dark:text-white/70 capitalize"
+                >
+                  {genre}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -135,6 +177,49 @@ export default async function CdDetailPage(
           </p>
         )}
       </div>
+
+      {relatedCds.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-sm font-medium text-black/60 dark:text-white/60 mb-3">
+            Related albums
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {relatedCds.map((related) => (
+              <Link
+                key={related._id}
+                href={`/cd/${related._id}`}
+                className="flex flex-col gap-2"
+              >
+                <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5 dark:bg-white/10 relative">
+                  {related.coverArtUrl ? (
+                    <Image
+                      src={related.coverArtUrl}
+                      alt={`${related.title} cover art`}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-4xl">
+                      💿
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-sm leading-tight truncate">
+                    {related.title}
+                  </p>
+                  <p className="text-sm text-black/60 dark:text-white/60 truncate">
+                    {related.artist}
+                    {related.year ? ` · ${related.year}` : ""}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
