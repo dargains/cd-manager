@@ -31,8 +31,22 @@ export interface AlbumMetadata {
 // MusicBrainz enforces a ~1 req/sec rate limit per source IP. On Vercel,
 // serverless functions share IP ranges with countless other deployments
 // also calling MusicBrainz, so a 503 here doesn't mean *we* went over the
-// limit — it can happen even on a single, first-ever request. Retry once
-// after a short backoff (honoring Retry-After when present) before giving up.
+// limit — it can happen even on a single, first-ever request. To avoid
+// tripping it ourselves too (adding a CD makes 2 sequential requests —
+// search, then genres), self-throttle to roughly 1 req/sec in addition to
+// retrying once on a 503 (honoring Retry-After when present).
+const MIN_REQUEST_INTERVAL_MS = 1100;
+let lastRequestAt = 0;
+
+async function waitForRateLimit() {
+  const elapsed = Date.now() - lastRequestAt;
+  if (elapsed < MIN_REQUEST_INTERVAL_MS) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, MIN_REQUEST_INTERVAL_MS - elapsed)
+    );
+  }
+}
+
 async function mbFetch(path: string): Promise<Response> {
   const url = `https://musicbrainz.org/ws/2/${path}`;
   const headers = {
@@ -40,6 +54,8 @@ async function mbFetch(path: string): Promise<Response> {
     Accept: "application/json",
   };
 
+  await waitForRateLimit();
+  lastRequestAt = Date.now();
   const res = await fetch(url, { headers });
   if (res.status !== 503) {
     return res;
@@ -51,6 +67,7 @@ async function mbFetch(path: string): Promise<Response> {
     : 1000;
   await new Promise((resolve) => setTimeout(resolve, delayMs));
 
+  lastRequestAt = Date.now();
   return fetch(url, { headers });
 }
 
@@ -84,9 +101,16 @@ export async function fetchAlbumMetadata(
 
   const releaseGroupId = best["release-group"]?.id ?? null;
 
-  // Genres are supplementary — if this lookup fails or is empty, we still
-  // want to save the rest of the metadata, so this never throws.
-  const genres = releaseGroupId ? await fetchGenres(releaseGroupId) : [];
+  // Genres are supplementary — if this lookup fails, we still want to save
+  // the rest of the metadata, so a failure here never blocks the add.
+  let genres: string[] = [];
+  if (releaseGroupId) {
+    try {
+      genres = await fetchGenres(releaseGroupId);
+    } catch (err) {
+      console.error("Genre lookup failed:", err);
+    }
+  }
 
   return {
     artist: best["artist-credit"]?.[0]?.name ?? artist,
@@ -111,24 +135,22 @@ interface MusicBrainzReleaseGroupDetail {
 }
 
 /**
- * Fetches the top user-voted genre tags for a release group. Best-effort:
- * returns an empty array rather than throwing if the lookup fails.
+ * Fetches the top user-voted genre tags for a release group. Throws on a
+ * failed request rather than swallowing it to `[]` — callers need to tell
+ * "genuinely no genre data" apart from "the lookup failed" (e.g. rate
+ * limiting), since the latter should be retried, not recorded as empty.
  */
 async function fetchGenres(releaseGroupId: string): Promise<string[]> {
-  try {
-    const res = await mbFetch(`release-group/${releaseGroupId}?inc=genres&fmt=json`);
-    if (!res.ok) {
-      return [];
-    }
-
-    const data: MusicBrainzReleaseGroupDetail = await res.json();
-    return (data.genres ?? [])
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-      .map((g) => g.name);
-  } catch {
-    return [];
+  const res = await mbFetch(`release-group/${releaseGroupId}?inc=genres&fmt=json`);
+  if (!res.ok) {
+    throw new Error(`MusicBrainz release-group lookup failed (${res.status})`);
   }
+
+  const data: MusicBrainzReleaseGroupDetail = await res.json();
+  return (data.genres ?? [])
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map((g) => g.name);
 }
 
 interface MusicBrainzTrack {
