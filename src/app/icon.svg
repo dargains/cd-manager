@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <style>
+    .disc { fill: #171717; }
+    .hole { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .disc { fill: #ededed; }
+      .hole { fill: #0a0a0a; }
+    }
+  </style>
+  <circle class="disc" cx="9" cy="9" r="7.2" opacity="0.28"/>
+  <circle class="disc" cx="13" cy="13" r="7.2" opacity="0.55"/>
+  <circle class="disc" cx="17" cy="17" r="7.2"/>
+  <circle class="hole" cx="17" cy="17" r="1.5"/>
+</svg>
